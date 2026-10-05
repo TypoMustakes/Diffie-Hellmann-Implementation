@@ -54,7 +54,7 @@
 
 						shellHook = ''
 							echo "Cybersecurity assignment development shell"
-							echo "Run: dotnet build"
+							echo "Run: dotnet build src/"
 						'';
 					};
 				});
