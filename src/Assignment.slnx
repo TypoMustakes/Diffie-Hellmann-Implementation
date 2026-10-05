@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="App/App.csproj" />
+  <Project Path="Logic/Logic.csproj" />
+  <Project Path="Network/Network.csproj" />
+</Solution>
