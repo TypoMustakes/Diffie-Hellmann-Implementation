@@ -36,6 +36,8 @@
 						dotnet-runtime = pkgs.dotnetCorePackages.runtime_11_0;
 						
 						selfContainedBuild = true;
+
+						executables = [ "App" ];
 					};
 				});
 			
