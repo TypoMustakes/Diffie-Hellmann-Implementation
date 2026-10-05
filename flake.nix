@@ -50,11 +50,18 @@
 					default = pkgs.mkShell {
 						packages = [
 							pkgs.dotnetCorePackages.sdk_11_0
-							pkgs.dotnetCorePackages.runtime_11_0
 						];
+
+						shellHook = ''
+							echo "Cybersecurity assignment development shell"
+							echo "Run: dotnet build"
+						'';
 					};
-				}
-			);
+				});
+
+			checks = forAllSystems (system: {
+				build = self.packages.${system}.default;
+			});
 		};
 }
-	
+
