@@ -27,7 +27,7 @@
 						src = ./src;
 						
 						# Change this if the project file has a different name.
-						projectFile = "MyApp.sln";
+						projectFile = "Assignment.slnx";
 						
 						# This file is generated in the next step below.
 						nugetDeps = ./deps.json;
@@ -35,8 +35,6 @@
 						dotnet-sdk = pkgs.dotnetCorePackages.sdk_11_0;
 						dotnet-runtime = pkgs.dotnetCorePackages.runtime_11_0;
 						
-						# Replace "MyApp" with the executable name produced by the project.
-						executables = [ "MyApp" ];
 						selfContainedBuild = true;
 					};
 				});
