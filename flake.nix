@@ -50,6 +50,7 @@
 					default = pkgs.mkShell {
 						packages = [
 							pkgs.dotnetCorePackages.sdk_11_0
+							pkgs.jetbrains.rider
 						];
 
 						shellHook = ''
