@@ -32,8 +32,8 @@
 						# This file is generated in the next step below.
 						nugetDeps = ./deps.json;
 						
-						dotnet-sdk = pkgs.dotnetCorePackages.sdk_11_0;
-						dotnet-runtime = pkgs.dotnetCorePackages.runtime_11_0;
+						dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
+						dotnet-runtime = pkgs.dotnetCorePackages.runtime_10_0;
 						
 						selfContainedBuild = true;
 
