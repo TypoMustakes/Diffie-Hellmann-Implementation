@@ -15,8 +15,7 @@ public class DhKeyExchange : IDhKeyExchange
 		GenerateParameters();
 	}
 
-	//For demonstration purposes, key length is decreased to 32 bits
-	private void GenerateParameters(int bitLength = 32)
+	private void GenerateParameters(int bitLength = 128)
 	{
 		BigInteger[] parameters = _parameterGenerator.GenerateParameters(bitLength);
 		P = parameters[0];
