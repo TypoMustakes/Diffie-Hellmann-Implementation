@@ -9,7 +9,16 @@ public class ParameterGenerator : IParameterGenerator
 	private BigInteger GeneratePrime(int bitLength)
 	{
 		SecureRandom random = new SecureRandom();
-		return new BigInteger(Org.BouncyCastle.Math.BigInteger.ProbablePrime(bitLength, random).ToByteArray());
+		
+		byte[] bytes = Org.BouncyCastle.Math.BigInteger
+			.ProbablePrime(bitLength, random)
+			.ToByteArrayUnsigned();
+		
+		return new BigInteger(
+			bytes,
+			isUnsigned: true,
+			isBigEndian: true
+		);
 	}
 
 	// Find a primitive root modulo p
