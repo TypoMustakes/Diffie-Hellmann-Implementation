@@ -1,27 +1,45 @@
 # Cybersecurity Assignment
 
-This repository contains a .NET 11 application organized into multiple projects.
+This repository contains a .NET 10 application organized into multiple projects.
 
 ## Requirements
 
-The application targets .NET 11.
+The application targets .NET 10.
 
-You can build it either:
+You can run it either:
 
 - with Nix, using the reproducible environment defined by `flake.nix`; or
-- directly with the .NET SDK installed on your system.
+- by building from source with the .NET SDK installed on your system.
 
-## Option 1: Build with Nix
+## Option 1: Run with Nix
 
-Nix provides the .NET SDK, runtime, and NuGet dependencies used by the project. This is the recommended option if the application does not build or run correctly using your locally installed .NET SDK.
+Nix provides the .NET SDK, runtime, and NuGet dependencies used by the project. This is the recommended option if the application does not build or run correctly using your locally installed .NET SDK, or if you don't want to install them just for this one project.
 
-[Install Nix](https://nixos.org/download) with flakes enabled, then from the repository root run:
+[Install Nix](https://nixos.org/download) with flakes enabled. 
 
-```bash
-nix build
+### Run directly from GitHub
+
+Run:
+```
+nix run github:TypoMustakes/Diffie-Hellmann-Implementation
 ```
 
-The executable will be under `result/bin`.
+This is the easiest method to run the project reproducibly
+
+### Run locally
+
+Clone the repository to your machine, and enter the project root
+
+```
+git clone https://github.com/TypoMustakes/Diffie-Hellmann-Implementation.git
+cd Diffie-Hellmann-Implementation
+```
+
+Then, from the project root, run:
+
+```bash
+nix run
+```
 
 ### Notes
 - On Windows, the Nix workflow should be run through a Linux environment such as WSL2.
@@ -32,7 +50,14 @@ experimental-features = nix-command flakes
 
 ## Option 2: Build without Nix
 
-[Install .NET SDK 11](https://dotnet.microsoft.com/en-us/download/dotnet/11.0)
+[Install .NET SDK 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+
+Clone the repository to your machine, and enter the project root
+
+```
+git clone https://github.com/TypoMustakes/Diffie-Hellmann-Implementation.git
+cd Diffie-Hellmann-Implementation
+```
 
 Then, from the project root:
 
