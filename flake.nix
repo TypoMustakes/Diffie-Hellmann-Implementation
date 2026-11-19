@@ -37,6 +37,8 @@
 						
 						selfContainedBuild = true;
 
+						enableParallelBuilding = false;
+
 						executables = [ "App" ];
 					};
 				});
@@ -63,6 +65,17 @@
 			checks = forAllSystems (system: {
 				build = self.packages.${system}.default;
 			});
+
+			apps = forAllSystems (system:
+				let
+					pkgs = import nixpkgs { inherit system; };
+					package = self.packages.${system}.default;
+				in {
+					default = {
+						type = "app";
+						program = "${package}/bin/App";
+					};
+				});
 		};
 }
 
