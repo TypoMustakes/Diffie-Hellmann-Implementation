@@ -31,17 +31,15 @@ public static class Program
 		Console.WriteLine("Waiting for peer discovery...");
 
 		// Advertise our presence.
-		await service.BroadcastAsync(
-			Encoding.UTF8.GetBytes("HELLO"));
-
-		// Wait until we discover the other peer.
-		using CancellationTokenSource timeout =
-			new(TimeSpan.FromSeconds(60));
-
+		using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(60));
+		
+		byte[] discoveryMessage = Encoding.UTF8.GetBytes("HELLO");
+		
 		while (service.PeerAddress == null)
 		{
 			timeout.Token.ThrowIfCancellationRequested();
-			await Task.Delay(100, timeout.Token);
+			await service.BroadcastAsync(discoveryMessage);
+			await Task.Delay(1000, timeout.Token);
 		}
 
 		Console.WriteLine(
