@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Network;
@@ -17,7 +18,7 @@ public sealed class PeerToPeerService : IDisposable, IPeerToPeerService
 	// The single discovered peer.
 	private IPAddress? _peerAddress;
 	public IPAddress? PeerAddress => _peerAddress;
-	private IPAddress? _localAddress;
+	private HashSet<IPAddress> _localAddresses = new();
 
 	public event Action<byte[]>? DataReceived;
 
@@ -30,7 +31,7 @@ public sealed class PeerToPeerService : IDisposable, IPeerToPeerService
 
 		_cts = new CancellationTokenSource();
 
-		_localAddress = GetLocalIPAddress();
+		_localAddresses = GetLocalIPAddresses();
 
 		// Start UDP discovery listener.
 		_udpListener = new UdpClient(DiscoveryPort);
@@ -47,16 +48,17 @@ public sealed class PeerToPeerService : IDisposable, IPeerToPeerService
 		_ = ListenForTcpConnectionsAsync(_cts.Token);
 	}
 
-	private IPAddress GetLocalIPAddress()
+	private HashSet<IPAddress> GetLocalIPAddresses()
 	{
-		using Socket socket = new(
-			AddressFamily.InterNetwork,
-			SocketType.Dgram,
-			ProtocolType.Udp);
-		
-		socket.Connect("8.8.8.8", 65530);
-		
-		return ((IPEndPoint)socket.LocalEndPoint!).Address;
+		return NetworkInterface
+			.GetAllNetworkInterfaces()
+			.Where(n => n.OperationalStatus ==
+				   OperationalStatus.Up)
+			.SelectMany(n => n.GetIPProperties().UnicastAddresses)
+			.Where(a => a.Address.AddressFamily ==
+				   AddressFamily.InterNetwork)
+			.Select(a => a.Address)
+			.ToHashSet();
 	}
 
 	private async Task ListenForPeerAsync(CancellationToken cancellationToken)
@@ -71,7 +73,7 @@ public sealed class PeerToPeerService : IDisposable, IPeerToPeerService
 
 				// Only store the first discovered peer. This is fine for demonstration purposes. Also ignore our own address
 				IPAddress sender = result.RemoteEndPoint.Address;
-				if (sender.Equals(_localAddress))
+				if (_localAddresses.Contains(sender))
 				{
 					continue;
 				}
