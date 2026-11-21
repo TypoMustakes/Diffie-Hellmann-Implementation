@@ -1,92 +1,169 @@
-﻿using System.Diagnostics;
+﻿using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using System.Numerics;
-using Logic;
+using System.Threading.Channels;
 
-namespace App;
+using Logic;
+using Network;
 
 public static class Program
 {
-	public static void Main()
+	public static async Task Main()
 	{
+		using PeerToPeerService service = new();
+
 		AesCrypto crypto = new();
-
-		DhKeyExchange dh = new(
-			new ParameterGenerator()
-		);
-
+		DhKeyExchange dh = new(new ParameterGenerator());
 		Hkdf hkdf = new();
 
-		// Generate private keys.
-		BigInteger alicePrivateKey = dh.GeneratePrivateKey();
-		BigInteger bobPrivateKey = dh.GeneratePrivateKey();
+		// Queue incoming TCP messages.
+		Channel<byte[]> incomingMessages =
+			Channel.CreateUnbounded<byte[]>();
 
-		// Generate public keys.
-		BigInteger alicePublicKey =
-			dh.GeneratePublicKey(alicePrivateKey);
+		service.DataReceived += data =>
+		{
+			incomingMessages.Writer.TryWrite(data);
+		};
 
-		BigInteger bobPublicKey =
-			dh.GeneratePublicKey(bobPrivateKey);
+		// Start networking.
+		service.Start();
 
-		// Derive shared secrets independently.
-		BigInteger aliceSharedSecret =
-			dh.DeriveSharedSecret(
-				alicePrivateKey,
-				bobPublicKey
-			);
+		Console.WriteLine("Waiting for peer discovery...");
 
-		BigInteger bobSharedSecret =
-			dh.DeriveSharedSecret(
-				bobPrivateKey,
-				alicePublicKey
-			);
+		// Advertise our presence.
+		await service.BroadcastAsync(
+			Encoding.UTF8.GetBytes("HELLO"));
 
-		// Verify that both parties obtained the same secret.
-		Debug.Assert(aliceSharedSecret == bobSharedSecret);
+		// Wait until we discover the other peer.
+		using CancellationTokenSource timeout =
+			new(TimeSpan.FromSeconds(60));
+
+		while (service.PeerAddress == null)
+		{
+			timeout.Token.ThrowIfCancellationRequested();
+			await Task.Delay(100, timeout.Token);
+		}
 
 		Console.WriteLine(
-			$"Shared secrets match: {aliceSharedSecret == bobSharedSecret}"
-		);
+			$"Discovered peer: {service.PeerAddress}");
 
-		// Derive AES keys independently.
-		byte[] aliceKey = hkdf.DeriveKey(aliceSharedSecret);
-		byte[] bobKey = hkdf.DeriveKey(bobSharedSecret);
+		Console.WriteLine("Generating Diffie-Hellmann keys...");
 
-		Debug.Assert(aliceKey.SequenceEqual(bobKey));
+		BigInteger privateKey = dh.GeneratePrivateKey();
 
-		Console.WriteLine($"Alice AES key length: {aliceKey.Length}");
-		Console.WriteLine($"Bob AES key length: {bobKey.Length}");
+		BigInteger publicKey =
+			dh.GeneratePublicKey(privateKey);
 
-		// Generate a fresh random IV for this encryption.
+		// Send our public key.
+		byte[] publicKeyBytes =
+			publicKey.ToByteArray(
+				isUnsigned: true,
+				isBigEndian: true);
+
+		await service.SendAsync(publicKeyBytes);
+
+		Console.WriteLine("Public key sent. Waiting for peer...");
+
+		// Receive the peer's public key.
+		byte[] remotePublicKeyBytes =
+			await incomingMessages.Reader.ReadAsync(
+				timeout.Token);
+
+		BigInteger remotePublicKey =
+			new BigInteger(
+				remotePublicKeyBytes,
+				isUnsigned: true,
+				isBigEndian: true);
+
+		Console.WriteLine("Peer public key received.");
+
+		BigInteger sharedSecret =
+			dh.DeriveSharedSecret(
+				privateKey,
+				remotePublicKey);
+
+		Console.WriteLine("Shared secret derived.");
+
+		// Derive AES key.
+		byte[] aesKey = hkdf.DeriveKey(sharedSecret);
+
+		Console.WriteLine($"AES key length: {aesKey.Length}");
+
+		// Encrypt and send message
+
+		string original =
+			"Hello from " + Environment.MachineName + "!";
+
+		byte[] plainText =
+			Encoding.UTF8.GetBytes(original);
+
+		// Generate fresh IV.
 		byte[] iv = RandomNumberGenerator.GetBytes(16);
 
-		string original = "Here is some data to encrypt";
-
-		byte[] plainText = Encoding.UTF8.GetBytes(original);
-
-		// Alice encrypts.
+		// Encrypt.
 		byte[] encrypted = crypto.Encrypt(
 			plainText,
-			aliceKey,
-			iv
-		);
+			aesKey,
+			iv);
 
-		// Bob decrypts using his independently derived key.
-		byte[] decrypted = crypto.Decrypt(
+		// Package IV + ciphertext into one message.
+		byte[] packet = new byte[iv.Length + encrypted.Length];
+
+		Buffer.BlockCopy(iv, 0, packet, 0, iv.Length);
+
+		Buffer.BlockCopy(
 			encrypted,
-			bobKey,
-			iv
-		);
+			0,
+			packet,
+			iv.Length,
+			encrypted.Length);
 
-		string decryptedText = Encoding.UTF8.GetString(decrypted);
+		// Send to discovered peer.
+		await service.SendAsync(packet);
 
-		Console.WriteLine($"Original:  {original}");
-		Console.WriteLine($"Encrypted: {Convert.ToBase64String(encrypted)}");
-		Console.WriteLine($"Decrypted: {decryptedText}");
+		Console.WriteLine("Encrypted message sent!");
+
+		// Receive and decrypt message
+
+		Console.WriteLine("Waiting for encrypted message...");
+
+		byte[] receivedPacket =
+			await incomingMessages.Reader.ReadAsync(
+				timeout.Token);
+
+		if (receivedPacket.Length < 16)
+			throw new InvalidOperationException(
+				"Invalid encrypted message.");
+
+		// Extract IV.
+		byte[] receivedIv =	receivedPacket[..16];
+
+		// Extract ciphertext.
+		byte[] receivedCiphertext =	receivedPacket[16..];
+
+		// Decrypt.
+		byte[] decrypted = crypto.Decrypt(
+			receivedCiphertext,
+			aesKey,
+			receivedIv);
+
+		string decryptedText =
+			Encoding.UTF8.GetString(decrypted);
+
+		Console.WriteLine();
+		Console.WriteLine("=================================");
+		Console.WriteLine("SECURE COMMUNICATION TEST");
+		Console.WriteLine("=================================");
+
+		Console.WriteLine($"Sent:	  {original}");
+		Console.WriteLine($"Received: {decryptedText}");
 
 		// Clear sensitive key material.
-		CryptographicOperations.ZeroMemory(aliceKey);
-		CryptographicOperations.ZeroMemory(bobKey);
+		CryptographicOperations.ZeroMemory(aesKey);
+
+		Console.WriteLine();
+		Console.WriteLine("Communication test completed!");
+
+		Console.ReadLine();
 	}
 }
