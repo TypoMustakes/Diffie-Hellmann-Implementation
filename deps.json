@@ -3,5 +3,15 @@
     "pname": "BouncyCastle.Cryptography",
     "version": "2.7.0",
     "hash": "sha256-8JH/zKtNA5k+Zgus4ndlmnne4JcvVNfx9L1G1oCWYkE="
+  },
+  {
+    "pname": "Microsoft.Extensions.DependencyInjection",
+    "version": "11.0.0",
+    "hash": "sha256-TFlRVeUCPzcEZH2wYWZdvZNUxO3QmIP3dI7BnyRDY/U="
+  },
+  {
+    "pname": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "version": "11.0.0",
+    "hash": "sha256-K7m6RKsAPGR7Mj4simMrLi7VTXNTRjQOHqd4fq838nA="
   }
 ]
