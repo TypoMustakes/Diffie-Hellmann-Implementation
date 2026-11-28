@@ -114,8 +114,6 @@ public sealed class PeerToPeerService :
 			
 			_state = state;
 		}
-		
-		Console.WriteLine($"Peer state: {state}");
 		StateChanged?.Invoke(state);
 	}
 	
@@ -234,7 +232,6 @@ public sealed class PeerToPeerService :
 		
 		if (accepted)
 		{
-			Console.WriteLine($"Discovered peer: {sender}");
 			State = PeerState.PeerDiscovered;
 		}
 	}
@@ -285,8 +282,6 @@ public sealed class PeerToPeerService :
 		if (restored)
 		{
 			State = PeerState.PeerDiscovered;
-			
-			Console.WriteLine("Peer connection restored!");
 			PeerRestored?.Invoke();
 		}
 	}
@@ -387,8 +382,6 @@ public sealed class PeerToPeerService :
 		if (lost)
 		{
 			State = PeerState.Disconnected;
-			
-			Console.WriteLine("Peer connection lost!");
 			PeerLost?.Invoke();
 		}
 	}
